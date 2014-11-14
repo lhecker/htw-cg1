@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+cd $(dirname $0)
+
+if [ ! -d "./build/gyp" ]; then
+	echo "Do you wish to install gyp?"
+	select yn in "Yes" "No"; do
+		case $yn in
+			Yes) mkdir -p build; git clone https://git.chromium.org/external/gyp.git build/gyp; break;;
+			No) exit 1;;
+		esac
+	done
+fi
+
+./gyp_glcraft.py $*
