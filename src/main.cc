@@ -16,7 +16,21 @@
 #include "gl_service.h"
 
 
-#define M_PIf 3.14159265358979323846f
+// Size of one chunk in blocks
+#define CX 16
+#define CY 32
+#define CZ 16
+
+// Number of chunks in the world
+#define SCX 32
+#define SCY 2
+#define SCZ 32
+
+// Sea level
+#define SEALEVEL 4
+
+// The width and height of the cube texture in pxel. Needs to be a multiple of 2.
+#define TEXTURE_SIZE 16
 
 
 static GLuint cube_program;
@@ -27,10 +41,15 @@ static GLint cube_uniform_v;
 static GLint cube_uniform_p;
 static GLint cube_uniform_normalMatrix;
 static GLint cube_uniform_lightPosition;
+static GLint cube_uniform_lightDirection;
 static GLint cube_uniform_cameraPosition;
 static GLint cube_uniform_lightAmbientIntensity;
 static GLint cube_uniform_lightDiffuseIntensity;
 static GLint cube_uniform_lightSpecularIntensity;
+static GLint cube_uniform_lightSpotAttenuationStatic;
+static GLint cube_uniform_lightSpotAttenuationLinear;
+static GLint cube_uniform_lightSpotAttenuationCubic;
+static GLint cube_uniform_lightSpotExponent;
 static GLint cube_uniform_matAmbientReflectance;
 static GLint cube_uniform_matDiffuseReflectance;
 static GLint cube_uniform_matSpecularReflectance;
@@ -69,26 +88,11 @@ static unsigned int buildtype = 1;
 
 static unsigned int keys;
 
-// Size of one chunk in blocks
-#define CX 16
-#define CY 32
-#define CZ 16
-
-// Number of chunks in the world
-#define SCX 32
-#define SCY 2
-#define SCZ 32
-
-// Sea level
-#define SEALEVEL 4
-
-// Number of VBO slots for chunks
-#define CHUNKSLOTS (SCX * SCY * SCZ)
+#define M_PIf 3.14159265358979323846f
+#define TYPE_TO_UV(type, x, y) glm::vec2((type + x) / float(TEXTURE_SIZE), (1.0 - y) / float(TEXTURE_SIZE))
 
 /*{ "air", "dirt", "topsoil", "grass", "leaves", "wood", "stone", "sand", "water", "glass", "brick", "ore", "woodrings", "white", "black", "x-y" }*/
 static const int transparent[16] = {2, 0, 0, 0, 1, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 0};
-
-#define TYPE_TO_UV(type, x, y) glm::fvec2((type + x) / 16.0f, 1.0 - y)
 
 struct chunk {
 	chunk* _left;
@@ -357,7 +361,7 @@ struct chunk {
 	void update() {
 		glm::u8vec3* vertex = new glm::u8vec3[CX * CY * CZ * 18];
 		glm::u8vec3* normal = new glm::u8vec3[CX * CY * CZ * 18];
-		glm::fvec2* uv = new glm::fvec2[CX * CY * CZ * 18];
+		glm::vec2* uv = new glm::vec2[CX * CY * CZ * 18];
 
 		size_t i = 0;
 		bool vis = false;
@@ -887,32 +891,48 @@ static int init_resources() {
 		return 1;
 	}
 
-	cube_uniform_m                      = glGetUniformLocation(cube_program, "m");
-	cube_uniform_v                      = glGetUniformLocation(cube_program, "v");
-	cube_uniform_p                      = glGetUniformLocation(cube_program, "p");
-	cube_uniform_normalMatrix           = glGetUniformLocation(cube_program, "normalMatrix");
-	cube_uniform_lightPosition          = glGetUniformLocation(cube_program, "lightPosition");
-	cube_uniform_cameraPosition         = glGetUniformLocation(cube_program, "cameraPosition");
-	cube_uniform_lightAmbientIntensity  = glGetUniformLocation(cube_program, "lightAmbientIntensity");
-	cube_uniform_lightDiffuseIntensity  = glGetUniformLocation(cube_program, "lightDiffuseIntensity");
-	cube_uniform_lightSpecularIntensity = glGetUniformLocation(cube_program, "lightSpecularIntensity");
-	cube_uniform_matAmbientReflectance  = glGetUniformLocation(cube_program, "matAmbientReflectance");
-	cube_uniform_matDiffuseReflectance  = glGetUniformLocation(cube_program, "matDiffuseReflectance");
-	cube_uniform_matSpecularReflectance = glGetUniformLocation(cube_program, "matSpecularReflectance");
-	cube_uniform_matShininess           = glGetUniformLocation(cube_program, "matShininess");
-	cube_uniform_diffuseTexture         = glGetUniformLocation(cube_program, "diffuseTexture");
+	cube_uniform_m                          = glGetUniformLocation(cube_program, "m");
+	cube_uniform_v                          = glGetUniformLocation(cube_program, "v");
+	cube_uniform_p                          = glGetUniformLocation(cube_program, "p");
+	cube_uniform_normalMatrix               = glGetUniformLocation(cube_program, "normalMatrix");
+	cube_uniform_lightPosition              = glGetUniformLocation(cube_program, "lightPosition");
+	cube_uniform_lightDirection             = glGetUniformLocation(cube_program, "lightDirection");
+	cube_uniform_cameraPosition             = glGetUniformLocation(cube_program, "cameraPosition");
+	cube_uniform_lightAmbientIntensity      = glGetUniformLocation(cube_program, "lightAmbientIntensity");
+	cube_uniform_lightDiffuseIntensity      = glGetUniformLocation(cube_program, "lightDiffuseIntensity");
+	cube_uniform_lightSpecularIntensity     = glGetUniformLocation(cube_program, "lightSpecularIntensity");
+	cube_uniform_lightSpotAttenuationStatic = glGetUniformLocation(cube_program, "lightSpotAttenuationStatic");
+	cube_uniform_lightSpotAttenuationLinear = glGetUniformLocation(cube_program, "lightSpotAttenuationLinear");
+	cube_uniform_lightSpotAttenuationCubic  = glGetUniformLocation(cube_program, "lightSpotAttenuationCubic");
+	cube_uniform_lightSpotExponent          = glGetUniformLocation(cube_program, "lightSpotExponent");
+	cube_uniform_matAmbientReflectance      = glGetUniformLocation(cube_program, "matAmbientReflectance");
+	cube_uniform_matDiffuseReflectance      = glGetUniformLocation(cube_program, "matDiffuseReflectance");
+	cube_uniform_matSpecularReflectance     = glGetUniformLocation(cube_program, "matSpecularReflectance");
+	cube_uniform_matShininess               = glGetUniformLocation(cube_program, "matShininess");
+	cube_uniform_diffuseTexture             = glGetUniformLocation(cube_program, "diffuseTexture");
 
-	cube_attribute_coord                = glGetAttribLocation(cube_program, "v_coord");
-	cube_attribute_normal               = glGetAttribLocation(cube_program, "v_normal");
-	cube_attribute_uv                   = glGetAttribLocation(cube_program, "v_uv");
+	cube_attribute_coord                    = glGetAttribLocation(cube_program, "v_coord");
+	cube_attribute_normal                   = glGetAttribLocation(cube_program, "v_normal");
+	cube_attribute_uv                       = glGetAttribLocation(cube_program, "v_uv");
 
 	if (   cube_uniform_m == -1
-		|| cube_uniform_v == -1
-		|| cube_uniform_p == -1
-		|| cube_uniform_normalMatrix == -1
-		|| cube_uniform_lightPosition == -1
-		|| cube_uniform_cameraPosition == -1
-		|| cube_uniform_diffuseTexture == -1
+	    || cube_uniform_v == -1
+	    || cube_uniform_p == -1
+	    || cube_uniform_normalMatrix == -1
+	    || cube_uniform_lightPosition == -1
+	    || cube_uniform_lightDirection == -1
+	    || cube_uniform_cameraPosition == -1
+	    || cube_uniform_lightAmbientIntensity == -1
+	    || cube_uniform_lightDiffuseIntensity == -1
+	    || cube_uniform_lightSpecularIntensity == -1
+	    || cube_uniform_lightSpotAttenuationStatic == -1
+	    || cube_uniform_lightSpotAttenuationLinear == -1
+	    || cube_uniform_lightSpotAttenuationCubic == -1
+	    || cube_uniform_matAmbientReflectance == -1
+	    || cube_uniform_matDiffuseReflectance == -1
+	    || cube_uniform_matSpecularReflectance == -1
+	    || cube_uniform_matShininess == -1
+	    || cube_uniform_diffuseTexture == -1
 		|| cube_attribute_coord == -1
 		|| cube_attribute_normal == -1
 		|| cube_attribute_uv == -1)
@@ -930,15 +950,68 @@ static int init_resources() {
 		return 3;
 	}
 
+	// the last test of those 3 checks if the value is a multiple of 2
+	if (imageWidth == 0 || imageWidth != imageHeight || (imageWidth & (imageWidth - 1)) != 0) {
+		return 4;
+	}
+
 	glGenTextures(1, &textures);
 	glBindTexture(GL_TEXTURE_2D, textures);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
 	glEnable(GL_TEXTURE_2D);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+
+	if (imageWidth > 1) {
+		GLint level = 1;
+
+		// the mipmapped texture of level 1 has already only half the pixels on each axis
+		std::vector<uint8_t> subimage((imageWidth >> 1) * (imageHeight >> 1));
+
+		do {
+			const size_t inc = 1 << level; // the width/height the new pixel corresponds to the original one
+			const size_t inc2 = inc * inc;
+			uint8_t* rowData = image.data();
+
+			subimage.clear();
+
+			for (size_t yt = 0; yt < imageHeight; yt += inc) {
+				uint8_t* tileData = rowData;
+
+				for (size_t xt = 0; xt < imageWidth; xt += inc) {
+					uint8_t* subData = tileData;
+					uint64_t pixelsum[4] = {0};
+
+					for (size_t y = 0; y < inc; y++) {
+						uint8_t* data = subData;
+
+						for (size_t x = 0; x < inc; x++) {
+							pixelsum[0] += *data++;
+							pixelsum[1] += *data++;
+							pixelsum[2] += *data++;
+							pixelsum[3] += *data++;
+						}
+
+						subData += imageWidth * 4;
+					}
+
+					subimage.push_back(pixelsum[0] / inc2);
+					subimage.push_back(pixelsum[1] / inc2);
+					subimage.push_back(pixelsum[2] / inc2);
+					subimage.push_back(pixelsum[3] / inc2);
+
+					tileData += inc * 4;
+				}
+
+				rowData += inc * imageWidth * 4;
+			}
+
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA, imageWidth >> level, imageHeight >> level, 0, GL_RGBA, GL_UNSIGNED_BYTE, subimage.data());
+			level++;
+		} while (imageWidth >> level);
+	}
 
 	// Create the world
 	world = new superchunk;
@@ -1171,15 +1244,19 @@ int main(int argc, char* argv[]) {
 		glUniformMatrix4fv(cube_uniform_v, 1, GL_FALSE, glm::value_ptr(v));
 		glUniformMatrix4fv(cube_uniform_p, 1, GL_FALSE, glm::value_ptr(p));
 
-		glUniform3fv(cube_uniform_lightPosition, 1, glm::value_ptr(glm::vec3(0.0, 256.0, 256.0)));
-		glUniform3fv(cube_uniform_cameraPosition, 1, glm::value_ptr(position));
-		glUniform3fv(cube_uniform_lightAmbientIntensity, 1, glm::value_ptr(glm::vec3(0.5, 0.5, 0.4)));
-		glUniform3fv(cube_uniform_lightDiffuseIntensity, 1, glm::value_ptr(glm::vec3(0.8, 0.8, 0.6)));
-		glUniform3fv(cube_uniform_lightSpecularIntensity, 1, glm::value_ptr(glm::vec3(1.0, 1.0, 0.8)));
-		glUniform3fv(cube_uniform_matAmbientReflectance, 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
-		glUniform3fv(cube_uniform_matDiffuseReflectance, 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
-		glUniform3fv(cube_uniform_matSpecularReflectance, 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
-		glUniform1f(cube_uniform_matShininess, 16.0);
+		glUniform4fv(cube_uniform_lightPosition, 1, glm::value_ptr(glm::vec4(position, 0.0f)));
+		glUniform3fv(cube_uniform_lightDirection, 1, glm::value_ptr(lookat));
+		glUniform3fv(cube_uniform_lightAmbientIntensity, 1, glm::value_ptr(glm::vec3(0.2f, 0.2f, 0.2f)));
+		glUniform3fv(cube_uniform_lightDiffuseIntensity, 1, glm::value_ptr(glm::vec3(0.8f, 0.8f, 0.6f)));
+		glUniform3fv(cube_uniform_lightSpecularIntensity, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 0.8f)));
+		glUniform1f(cube_uniform_lightSpotAttenuationStatic, 0.2f);
+		glUniform1f(cube_uniform_lightSpotAttenuationLinear, 0.0f);
+		glUniform1f(cube_uniform_lightSpotAttenuationCubic, 0.005f);
+		glUniform1f(cube_uniform_lightSpotExponent, 50.0f);
+		glUniform3fv(cube_uniform_matAmbientReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
+		glUniform3fv(cube_uniform_matDiffuseReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
+		glUniform3fv(cube_uniform_matSpecularReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
+		glUniform1f(cube_uniform_matShininess, 64.0f);
 
 		// Then draw chunks
 		glActiveTexture(GL_TEXTURE0);
@@ -1219,6 +1296,7 @@ int main(int argc, char* argv[]) {
 		// Find out which face of the block we are looking at
 		if (fract(objcoord.x) < fract(objcoord.y)) {
 			if (fract(objcoord.x) < fract(objcoord.z)) {
+				mx--;
 				face = 0;    // X
 			} else {
 				face = 2;    // Z
@@ -1230,15 +1308,18 @@ int main(int argc, char* argv[]) {
 		}
 
 		if (face == 0 && lookat.x > 0) {
-			face += 3;
+			mx++;
+			face = 3;
 		}
 
 		if (face == 1 && lookat.y > 0) {
-			face += 3;
+			my++;
+			face = 4;
 		}
 
 		if (face == 2 && lookat.z > 0) {
-			face += 3;
+			mz++;
+			face = 5;
 		}
 
 		const float mxf = mx;
@@ -1310,7 +1391,7 @@ int main(int argc, char* argv[]) {
 		}
 	} catch (const std::exception& e) {
 		std::cout << e.what() << std::endl;
-		return 1;
+		return 127;
 	}
 
 	service.run();
