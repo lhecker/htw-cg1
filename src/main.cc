@@ -39,22 +39,23 @@ static GLuint white_program;
 static GLint cube_uniform_m;
 static GLint cube_uniform_v;
 static GLint cube_uniform_p;
-static GLint cube_uniform_normalMatrix;
-static GLint cube_uniform_lightPosition;
-static GLint cube_uniform_lightDirection;
 static GLint cube_uniform_cameraPosition;
+static GLint cube_uniform_diffuseTexture;
 static GLint cube_uniform_lightAmbientIntensity;
 static GLint cube_uniform_lightDiffuseIntensity;
+static GLint cube_uniform_lightDirection;
+static GLint cube_uniform_lightPosition;
 static GLint cube_uniform_lightSpecularIntensity;
-static GLint cube_uniform_lightSpotAttenuationStatic;
-static GLint cube_uniform_lightSpotAttenuationLinear;
 static GLint cube_uniform_lightSpotAttenuationCubic;
+static GLint cube_uniform_lightSpotAttenuationLinear;
+static GLint cube_uniform_lightSpotAttenuationStatic;
 static GLint cube_uniform_lightSpotExponent;
+static GLint cube_uniform_lightSpotOffset;
 static GLint cube_uniform_matAmbientReflectance;
 static GLint cube_uniform_matDiffuseReflectance;
-static GLint cube_uniform_matSpecularReflectance;
 static GLint cube_uniform_matShininess;
-static GLint cube_uniform_diffuseTexture;
+static GLint cube_uniform_matSpecularReflectance;
+static GLint cube_uniform_normalMatrix;
 
 static GLint cube_attribute_coord;
 static GLint cube_attribute_normal;
@@ -905,12 +906,12 @@ static int init_resources() {
 	cube_uniform_lightSpotAttenuationLinear = glGetUniformLocation(cube_program, "lightSpotAttenuationLinear");
 	cube_uniform_lightSpotAttenuationCubic  = glGetUniformLocation(cube_program, "lightSpotAttenuationCubic");
 	cube_uniform_lightSpotExponent          = glGetUniformLocation(cube_program, "lightSpotExponent");
+	cube_uniform_lightSpotOffset            = glGetUniformLocation(cube_program, "lightSpotOffset");
 	cube_uniform_matAmbientReflectance      = glGetUniformLocation(cube_program, "matAmbientReflectance");
 	cube_uniform_matDiffuseReflectance      = glGetUniformLocation(cube_program, "matDiffuseReflectance");
 	cube_uniform_matSpecularReflectance     = glGetUniformLocation(cube_program, "matSpecularReflectance");
 	cube_uniform_matShininess               = glGetUniformLocation(cube_program, "matShininess");
 	cube_uniform_diffuseTexture             = glGetUniformLocation(cube_program, "diffuseTexture");
-
 	cube_attribute_coord                    = glGetAttribLocation(cube_program, "v_coord");
 	cube_attribute_normal                   = glGetAttribLocation(cube_program, "v_normal");
 	cube_attribute_uv                       = glGetAttribLocation(cube_program, "v_uv");
@@ -928,13 +929,15 @@ static int init_resources() {
 	    || cube_uniform_lightSpotAttenuationStatic == -1
 	    || cube_uniform_lightSpotAttenuationLinear == -1
 	    || cube_uniform_lightSpotAttenuationCubic == -1
+	    || cube_uniform_lightSpotExponent == -1
+	    || cube_uniform_lightSpotOffset == -1
 	    || cube_uniform_matAmbientReflectance == -1
 	    || cube_uniform_matDiffuseReflectance == -1
 	    || cube_uniform_matSpecularReflectance == -1
 	    || cube_uniform_matShininess == -1
 	    || cube_uniform_diffuseTexture == -1
-		|| cube_attribute_coord == -1
-		|| cube_attribute_normal == -1
+	    || cube_attribute_coord == -1
+	    || cube_attribute_normal == -1
 		|| cube_attribute_uv == -1)
 	{
 		return 2;
@@ -1252,7 +1255,8 @@ int main(int argc, char* argv[]) {
 		glUniform1f(cube_uniform_lightSpotAttenuationStatic, 0.2f);
 		glUniform1f(cube_uniform_lightSpotAttenuationLinear, 0.0f);
 		glUniform1f(cube_uniform_lightSpotAttenuationCubic, 0.005f);
-		glUniform1f(cube_uniform_lightSpotExponent, 50.0f);
+		glUniform1f(cube_uniform_lightSpotExponent, 20.0f);
+		glUniform1f(cube_uniform_lightSpotOffset, -0.02f);
 		glUniform3fv(cube_uniform_matAmbientReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
 		glUniform3fv(cube_uniform_matDiffuseReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
 		glUniform3fv(cube_uniform_matSpecularReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));

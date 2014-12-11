@@ -11,7 +11,8 @@ uniform float lightSpotAttenuationStatic; // = 0.25
 uniform float lightSpotAttenuationLinear; // = 0.0
 uniform float lightSpotAttenuationCubic; // = 0.01
 
-uniform float lightSpotExponent; // = 50.0 | the lower the value the wider the spotlight
+uniform float lightSpotOffset; // = -0.02 | increases or decreases the reflectance - useful if you want to prevent specular spots at short distances
+uniform float lightSpotExponent; // = 20.0 | the lower the value the wider the spotlight
 
 uniform vec3 matAmbientReflectance; // = vec3(1, 1, 1);
 uniform vec3 matDiffuseReflectance; // = vec3(1, 1, 1);
@@ -53,8 +54,7 @@ void main(void) {
 		if (lightPosition.w == 1.0) {
 			attenuation = 1.0;
 		} else {
-			// convert the range [-1, +1] of the cos function to [0, 1]
-			float clampedCosine = (dot(L, D) * 0.5) + 0.5;
+			float clampedCosine = clamp(dot(L, D) + lightSpotOffset, 0.0, 1.0);
 
 			float distance = length(f_toLight);
 			attenuation = pow(clampedCosine, lightSpotExponent) * (1.0 / (lightSpotAttenuationStatic + lightSpotAttenuationLinear * distance + lightSpotAttenuationCubic * distance * distance));
