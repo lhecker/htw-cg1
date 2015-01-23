@@ -17,14 +17,14 @@ uniform float lightSpotExponent; // = 20.0 | the lower the value the wider the s
 uniform vec3 matAmbientReflectance; // = vec3(1, 1, 1);
 uniform vec3 matDiffuseReflectance; // = vec3(1, 1, 1);
 uniform vec3 matSpecularReflectance; // = vec3(1, 1, 1);
-uniform float matShininess; // = 64;
+uniform float matShininess; // = 16;
 
-uniform sampler2D diffuseTexture;
+uniform sampler2DArray diffuseTexture;
 
 in vec3 f_toLight;
 in vec3 f_toCamera;
 in vec3 f_normal;
-in vec2 f_uv;
+in vec3 f_uv;
 
 out vec4 f_color;
 
@@ -32,6 +32,10 @@ out vec4 f_color;
 void main(void) {
 	// diffuse color of the object from texture
 	f_color = texture(diffuseTexture, f_uv);
+
+	if(f_color.a < 0.1) {
+		discard;
+	}
 
 	// normalize vectors after interpolation
 	vec3 L = normalize(f_toLight);
@@ -49,22 +53,18 @@ void main(void) {
 	float specularTerm = 0.0;
 
 	if (dotNL > 0.0) {
-		float attenuation;
+		float attenuation = 0.0;
 
-		if (lightPosition.w == 1.0) {
-			attenuation = 1.0;
-		} else {
+		if (lightPosition.w == 0.0) {
 			float clampedCosine = clamp(dot(L, D) + lightSpotOffset, 0.0, 1.0);
 
 			float distance = length(f_toLight);
 			attenuation = pow(clampedCosine, lightSpotExponent) * (1.0 / (lightSpotAttenuationStatic + lightSpotAttenuationLinear * distance + lightSpotAttenuationCubic * distance * distance));
 		}
 
-		// calculate diffuse/specular only if the surface is oriented to the light source
-
 		Idif = attenuation * matDiffuseReflectance * lightDiffuseIntensity * max(0.0, dotNL);
 
-		vec3 H = normalize(L + V); // half vector
+		vec3 H = normalize(L + V); // halfway vector
 		Ispe = attenuation * matSpecularReflectance * lightSpecularIntensity * pow(dot(N, H), matShininess);
 	}
 

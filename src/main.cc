@@ -1,5 +1,6 @@
 #ifdef _WIN32
 # include <windows.h>
+# include <io.h>
 #endif
 
 #include <cstdio>
@@ -7,6 +8,7 @@
 #include <cmath>
 #include <ctime>
 #include <iostream>
+#include <fstream>
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
@@ -28,9 +30,6 @@
 
 // Sea level
 #define SEALEVEL 4
-
-// The width and height of the cube texture in pxel. Needs to be a multiple of 2.
-#define TEXTURE_SIZE 16
 
 
 static GLuint cube_program;
@@ -90,7 +89,7 @@ static unsigned int buildtype = 1;
 static unsigned int keys;
 
 #define M_PIf 3.14159265358979323846f
-#define TYPE_TO_UV(type, x, y) glm::vec2((type + x) / float(TEXTURE_SIZE), (1.0 - y) / float(TEXTURE_SIZE))
+#define TYPE_TO_UV(type, x, y) glm::u8vec3((x), (y), (type))
 
 /*{ "air", "dirt", "topsoil", "grass", "leaves", "wood", "stone", "sand", "water", "glass", "brick", "ore", "woodrings", "white", "black", "x-y" }*/
 static const int transparent[16] = {2, 0, 0, 0, 1, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 0};
@@ -362,10 +361,9 @@ struct chunk {
 	void update() {
 		glm::u8vec3* vertex = new glm::u8vec3[CX * CY * CZ * 18];
 		glm::u8vec3* normal = new glm::u8vec3[CX * CY * CZ * 18];
-		glm::vec2* uv = new glm::vec2[CX * CY * CZ * 18];
+		glm::u8vec3* uv = new glm::u8vec3[CX * CY * CZ * 18];
 
 		size_t i = 0;
-		bool vis = false;
 
 		// View from negative x
 
@@ -374,7 +372,6 @@ struct chunk {
 				for (int z = 0; z < CZ; z++) {
 					// Line of sight blocked?
 					if (this->isblocked(x, y, z, x - 1, y, z)) {
-						vis = false;
 						continue;
 					}
 
@@ -414,8 +411,6 @@ struct chunk {
 					uv[i + 5] = TYPE_TO_UV(side, 1.0f, 1.0f);
 
 					i += 6;
-
-					vis = true;
 				}
 			}
 		}
@@ -426,7 +421,6 @@ struct chunk {
 			for (int y = 0; y < CY; y++) {
 				for (int z = 0; z < CZ; z++) {
 					if (this->isblocked(x, y, z, x + 1, y, z)) {
-						vis = false;
 						continue;
 					}
 
@@ -464,8 +458,6 @@ struct chunk {
 					uv[i + 5] = TYPE_TO_UV(side, 0.0f, 1.0f);
 
 					i += 6;
-
-					vis = true;
 				}
 			}
 		}
@@ -476,7 +468,6 @@ struct chunk {
 			for (int y = CY - 1; y >= 0; y--) {
 				for (int z = 0; z < CZ; z++) {
 					if (this->isblocked(x, y, z, x, y - 1, z)) {
-						vis = false;
 						continue;
 					}
 
@@ -512,8 +503,6 @@ struct chunk {
 					uv[i + 5] = TYPE_TO_UV(bottom, 0.0f, 1.0f);
 
 					i += 6;
-
-					vis = true;
 				}
 			}
 		}
@@ -524,7 +513,6 @@ struct chunk {
 			for (int y = 0; y < CY; y++) {
 				for (int z = 0; z < CZ; z++) {
 					if (this->isblocked(x, y, z, x, y + 1, z)) {
-						vis = false;
 						continue;
 					}
 
@@ -560,8 +548,6 @@ struct chunk {
 					uv[i + 5] = TYPE_TO_UV(top, 1.0f, 1.0f);
 
 					i += 6;
-
-					vis = true;
 				}
 			}
 		}
@@ -572,7 +558,6 @@ struct chunk {
 			for (int z = CZ - 1; z >= 0; z--) {
 				for (int y = 0; y < CY; y++) {
 					if (this->isblocked(x, y, z, x, y, z - 1)) {
-						vis = false;
 						continue;
 					}
 
@@ -610,8 +595,6 @@ struct chunk {
 					uv[i + 5] = TYPE_TO_UV(side, 1.0f, 0.0f);
 
 					i += 6;
-
-					vis = true;
 				}
 			}
 		}
@@ -622,7 +605,6 @@ struct chunk {
 			for (int z = 0; z < CZ; z++) {
 				for (int y = 0; y < CY; y++) {
 					if (this->isblocked(x, y, z, x, y, z + 1)) {
-						vis = false;
 						continue;
 					}
 
@@ -660,8 +642,6 @@ struct chunk {
 					uv[i + 5] = TYPE_TO_UV(side, 1.0f, 1.0f);
 
 					i += 6;
-
-					vis = true;
 				}
 			}
 		}
@@ -691,7 +671,7 @@ struct chunk {
 			glBufferData(GL_ARRAY_BUFFER, i * sizeof(uv[0]), uv, GL_DYNAMIC_DRAW);
 
 			glEnableVertexAttribArray(cube_attribute_uv);
-			glVertexAttribPointer(cube_attribute_uv, 2, GL_FLOAT, GL_FALSE, 0, 0);
+			glVertexAttribPointer(cube_attribute_uv, 3, GL_BYTE, GL_FALSE, 0, 0);
 		}
 
 		delete[] vertex;
@@ -896,9 +876,9 @@ static int init_resources() {
 	cube_uniform_v                          = glGetUniformLocation(cube_program, "v");
 	cube_uniform_p                          = glGetUniformLocation(cube_program, "p");
 	cube_uniform_normalMatrix               = glGetUniformLocation(cube_program, "normalMatrix");
+	cube_uniform_cameraPosition             = glGetUniformLocation(cube_program, "cameraPosition");
 	cube_uniform_lightPosition              = glGetUniformLocation(cube_program, "lightPosition");
 	cube_uniform_lightDirection             = glGetUniformLocation(cube_program, "lightDirection");
-	cube_uniform_cameraPosition             = glGetUniformLocation(cube_program, "cameraPosition");
 	cube_uniform_lightAmbientIntensity      = glGetUniformLocation(cube_program, "lightAmbientIntensity");
 	cube_uniform_lightDiffuseIntensity      = glGetUniformLocation(cube_program, "lightDiffuseIntensity");
 	cube_uniform_lightSpecularIntensity     = glGetUniformLocation(cube_program, "lightSpecularIntensity");
@@ -920,9 +900,9 @@ static int init_resources() {
 	    || cube_uniform_v == -1
 	    || cube_uniform_p == -1
 	    || cube_uniform_normalMatrix == -1
+	    || cube_uniform_cameraPosition == -1
 	    || cube_uniform_lightPosition == -1
 	    || cube_uniform_lightDirection == -1
-	    || cube_uniform_cameraPosition == -1
 	    || cube_uniform_lightAmbientIntensity == -1
 	    || cube_uniform_lightDiffuseIntensity == -1
 	    || cube_uniform_lightSpecularIntensity == -1
@@ -943,6 +923,21 @@ static int init_resources() {
 		return 2;
 	}
 
+	glUseProgram(cube_program);
+	glUniform3fv(cube_uniform_lightAmbientIntensity, 1, glm::value_ptr(glm::vec3(0.1f, 0.1f, 0.1f)));
+	glUniform3fv(cube_uniform_lightDiffuseIntensity, 1, glm::value_ptr(glm::vec3(0.8f, 0.8f, 0.6f)));
+	glUniform3fv(cube_uniform_lightSpecularIntensity, 1, glm::value_ptr(glm::vec3(0.4f, 0.4f, 0.4f)));
+	glUniform1f(cube_uniform_lightSpotAttenuationStatic, 0.2f);
+	glUniform1f(cube_uniform_lightSpotAttenuationLinear, 0.0f);
+	glUniform1f(cube_uniform_lightSpotAttenuationCubic, 0.005f);
+	glUniform1f(cube_uniform_lightSpotExponent, 20.0f);
+	glUniform1f(cube_uniform_lightSpotOffset, 0.0f);
+	glUniform3fv(cube_uniform_matAmbientReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
+	glUniform3fv(cube_uniform_matDiffuseReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
+	glUniform3fv(cube_uniform_matSpecularReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
+	glUniform1f(cube_uniform_matShininess, 1.0f);
+
+
 	// Create and upload the texture
 	std::vector<uint8_t> imageData = gl_service::load_file("assets/textures/textures.png");
 	std::vector<uint8_t> image;
@@ -954,69 +949,29 @@ static int init_resources() {
 	}
 
 	// the last test of those 3 checks if the value is a multiple of 2
-	if (imageWidth == 0 || imageWidth != imageHeight || (imageWidth & (imageWidth - 1)) != 0) {
+	if (imageWidth == 0 || (imageWidth & (imageWidth - 1)) != 0 || imageWidth > imageHeight || imageHeight % imageWidth != 0) {
 		return 4;
 	}
 
+	const uint32_t* data = (uint32_t*)image.data();
+	const unsigned long spritePixelCount = imageWidth * imageWidth;
+	const unsigned long layers = imageHeight / imageWidth;
+
 	glGenTextures(1, &textures);
-	glBindTexture(GL_TEXTURE_2D, textures);
-	glEnable(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textures);
 
-	if (imageWidth > 1) {
-		GLint level = 1;
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, imageWidth, imageWidth, layers);
 
-		// the mipmapped texture of level 1 has already only half the pixels on each axis
-		std::vector<uint8_t> subimage((imageWidth >> 1) * (imageHeight >> 1));
-
-		do {
-			const size_t inc = 1 << level; // the width/height the new pixel corresponds to the original one
-			const size_t inc2 = inc * inc;
-			uint8_t* rowData = image.data();
-
-			subimage.clear();
-
-			for (size_t yt = 0; yt < imageHeight; yt += inc) {
-				uint8_t* tileData = rowData;
-
-				for (size_t xt = 0; xt < imageWidth; xt += inc) {
-					uint8_t* subData = tileData;
-					uint64_t pixelsum[4] = {0};
-
-					for (size_t y = 0; y < inc; y++) {
-						uint8_t* data = subData;
-
-						for (size_t x = 0; x < inc; x++) {
-							pixelsum[0] += *data++;
-							pixelsum[1] += *data++;
-							pixelsum[2] += *data++;
-							pixelsum[3] += *data++;
-						}
-
-						subData += imageWidth * 4;
-					}
-
-					subimage.push_back(pixelsum[0] / inc2);
-					subimage.push_back(pixelsum[1] / inc2);
-					subimage.push_back(pixelsum[2] / inc2);
-					subimage.push_back(pixelsum[3] / inc2);
-
-					tileData += inc * 4;
-				}
-
-				rowData += inc * imageWidth * 4;
-			}
-
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA, imageWidth >> level, imageHeight >> level, 0, GL_RGBA, GL_UNSIGNED_BYTE, subimage.data());
-			level++;
-		} while (imageWidth >> level);
+	for (unsigned long i = 0; i < layers; i++) {
+		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, imageWidth, imageWidth, layers, GL_RGBA, GL_UNSIGNED_BYTE, data + (i * spritePixelCount * 4));
 	}
 
-	// Create the world
+
 	world = new superchunk;
 
 	position = glm::vec3(0, SEALEVEL + 10, 0);
@@ -1026,7 +981,6 @@ static int init_resources() {
 
 	glGenVertexArrays(1, &box_vao);
 	glGenBuffers(1, &box_vbo);
-
 
 	// Create a VBO for the cursor
 	float cross[4][2] = {
@@ -1059,6 +1013,8 @@ static float fract(float value) {
 }
 
 int main(int argc, char* argv[]) {
+	srand(time(nullptr));
+
 	gl_service service("minecraft");
 	service.set_cursor_disabled(true);
 
@@ -1238,6 +1194,7 @@ int main(int argc, char* argv[]) {
 
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
 
 		glUseProgram(cube_program);
 
@@ -1247,32 +1204,19 @@ int main(int argc, char* argv[]) {
 		glUniformMatrix4fv(cube_uniform_v, 1, GL_FALSE, glm::value_ptr(v));
 		glUniformMatrix4fv(cube_uniform_p, 1, GL_FALSE, glm::value_ptr(p));
 
+		glUniform3fv(cube_uniform_cameraPosition, 1, glm::value_ptr(position));
 		glUniform4fv(cube_uniform_lightPosition, 1, glm::value_ptr(glm::vec4(position, 0.0f)));
 		glUniform3fv(cube_uniform_lightDirection, 1, glm::value_ptr(lookat));
-		glUniform3fv(cube_uniform_lightAmbientIntensity, 1, glm::value_ptr(glm::vec3(0.2f, 0.2f, 0.2f)));
-		glUniform3fv(cube_uniform_lightDiffuseIntensity, 1, glm::value_ptr(glm::vec3(0.8f, 0.8f, 0.6f)));
-		glUniform3fv(cube_uniform_lightSpecularIntensity, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 0.8f)));
-		glUniform1f(cube_uniform_lightSpotAttenuationStatic, 0.2f);
-		glUniform1f(cube_uniform_lightSpotAttenuationLinear, 0.0f);
-		glUniform1f(cube_uniform_lightSpotAttenuationCubic, 0.005f);
-		glUniform1f(cube_uniform_lightSpotExponent, 20.0f);
-		glUniform1f(cube_uniform_lightSpotOffset, -0.02f);
-		glUniform3fv(cube_uniform_matAmbientReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
-		glUniform3fv(cube_uniform_matDiffuseReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
-		glUniform3fv(cube_uniform_matSpecularReflectance, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
-		glUniform1f(cube_uniform_matShininess, 64.0f);
 
-		// Then draw chunks
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textures);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, textures);
 		glUniform1i(cube_uniform_diffuseTexture, /*GL_TEXTURE*/0);
 
 		world->render(v, p);
 
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
 		// Find out coordinates of the center pixel
-
 		float depth;
 		glReadPixels(ww / 2, wh / 2, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
 
@@ -1326,9 +1270,9 @@ int main(int argc, char* argv[]) {
 			face = 5;
 		}
 
-		const float mxf = mx;
-		const float myf = my;
-		const float mzf = mz;
+		const float mxf = float(mx);
+		const float myf = float(my);
+		const float mzf = float(mz);
 
 		// Render a box around the block we are pointing at.
 		float box[24][4] = {
@@ -1394,7 +1338,7 @@ int main(int argc, char* argv[]) {
 			return r;
 		}
 	} catch (const std::exception& e) {
-		std::cout << e.what() << std::endl;
+		std::cerr << e.what() << std::endl;
 		return 127;
 	}
 
@@ -1405,6 +1349,10 @@ int main(int argc, char* argv[]) {
 #ifdef _WIN32
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+	std::ofstream log("glcraft.log");
+	std::cout.rdbuf(log.rdbuf());
+	std::cerr.rdbuf(log.rdbuf());
+
 	return main(0, nullptr);
 }
 

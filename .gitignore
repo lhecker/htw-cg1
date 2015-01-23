@@ -22,3 +22,5 @@ UpgradeLog*.XML
 [Dd]ebug/
 [Rr]elease/
 ipch
+Thumbs.db
+glcraft.log

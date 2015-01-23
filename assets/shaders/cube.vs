@@ -7,19 +7,19 @@ uniform mat4 p;
 uniform mat3 normalMatrix;
 
 // position of light and camera
-uniform vec4 lightPosition; // w=0: Spotlight, w=1: Global light
 uniform vec3 cameraPosition;
+uniform vec4 lightPosition; // w=0: Spotlight, w=1: Global light
 
 // attributes
 in vec3 v_coord;
 in vec3 v_normal;
-in vec2 v_uv;
+in vec3 v_uv;
 
 // data for fragment shader
 out vec3 f_toLight;
 out vec3 f_toCamera;
 out vec3 f_normal;
-out vec2 f_uv;
+out vec3 f_uv;
 
 ///////////////////////////////////////////////////////////////////
 
