@@ -89,7 +89,7 @@ static unsigned int buildtype = 1;
 static unsigned int keys;
 
 #define M_PIf 3.14159265358979323846f
-#define TYPE_TO_UV(type, x, y) glm::u8vec3((x), (y), (type))
+#define TYPE_TO_UV(type, x, y) glm::i8vec3((x), (y), (type))
 
 /*{ "air", "dirt", "topsoil", "grass", "leaves", "wood", "stone", "sand", "water", "glass", "brick", "ore", "woodrings", "white", "black", "x-y" }*/
 static const int transparent[16] = {2, 0, 0, 0, 1, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 0};
@@ -359,9 +359,9 @@ struct chunk {
 	}
 
 	void update() {
-		glm::u8vec3* vertex = new glm::u8vec3[CX * CY * CZ * 18];
-		glm::u8vec3* normal = new glm::u8vec3[CX * CY * CZ * 18];
-		glm::u8vec3* uv = new glm::u8vec3[CX * CY * CZ * 18];
+		glm::i8vec3* vertex = new glm::i8vec3[CX * CY * CZ * 18];
+		glm::i8vec3* normal = new glm::i8vec3[CX * CY * CZ * 18];
+		glm::i8vec3* uv = new glm::i8vec3[CX * CY * CZ * 18];
 
 		size_t i = 0;
 
@@ -389,19 +389,19 @@ struct chunk {
 						top = bottom = 12;
 					}
 
-					vertex[i + 0] = glm::u8vec3(x, y, z);
-					vertex[i + 1] = glm::u8vec3(x, y, z + 1);
-					vertex[i + 2] = glm::u8vec3(x, y + 1, z);
-					vertex[i + 3] = glm::u8vec3(x, y + 1, z);
-					vertex[i + 4] = glm::u8vec3(x, y, z + 1);
-					vertex[i + 5] = glm::u8vec3(x, y + 1, z + 1);
+					vertex[i + 0] = glm::i8vec3(x, y, z);
+					vertex[i + 1] = glm::i8vec3(x, y, z + 1);
+					vertex[i + 2] = glm::i8vec3(x, y + 1, z);
+					vertex[i + 3] = glm::i8vec3(x, y + 1, z);
+					vertex[i + 4] = glm::i8vec3(x, y, z + 1);
+					vertex[i + 5] = glm::i8vec3(x, y + 1, z + 1);
 
-					normal[i + 0] = glm::u8vec3(-1, 0, 0);
-					normal[i + 1] = glm::u8vec3(-1, 0, 0);
-					normal[i + 2] = glm::u8vec3(-1, 0, 0);
-					normal[i + 3] = glm::u8vec3(-1, 0, 0);
-					normal[i + 4] = glm::u8vec3(-1, 0, 0);
-					normal[i + 5] = glm::u8vec3(-1, 0, 0);
+					normal[i + 0] = glm::i8vec3(-1, 0, 0);
+					normal[i + 1] = glm::i8vec3(-1, 0, 0);
+					normal[i + 2] = glm::i8vec3(-1, 0, 0);
+					normal[i + 3] = glm::i8vec3(-1, 0, 0);
+					normal[i + 4] = glm::i8vec3(-1, 0, 0);
+					normal[i + 5] = glm::i8vec3(-1, 0, 0);
 
 					uv[i + 0] = TYPE_TO_UV(side, 0.0f, 0.0f);
 					uv[i + 1] = TYPE_TO_UV(side, 0.0f, 1.0f);
@@ -436,19 +436,19 @@ struct chunk {
 						top = bottom = 12;
 					}
 
-					vertex[i + 0] = glm::u8vec3(x + 1, y, z);
-					vertex[i + 1] = glm::u8vec3(x + 1, y + 1, z);
-					vertex[i + 2] = glm::u8vec3(x + 1, y, z + 1);
-					vertex[i + 3] = glm::u8vec3(x + 1, y + 1, z);
-					vertex[i + 4] = glm::u8vec3(x + 1, y + 1, z + 1);
-					vertex[i + 5] = glm::u8vec3(x + 1, y, z + 1);
+					vertex[i + 0] = glm::i8vec3(x + 1, y, z);
+					vertex[i + 1] = glm::i8vec3(x + 1, y + 1, z);
+					vertex[i + 2] = glm::i8vec3(x + 1, y, z + 1);
+					vertex[i + 3] = glm::i8vec3(x + 1, y + 1, z);
+					vertex[i + 4] = glm::i8vec3(x + 1, y + 1, z + 1);
+					vertex[i + 5] = glm::i8vec3(x + 1, y, z + 1);
 
-					normal[i + 0] = glm::u8vec3(1, 0, 0);
-					normal[i + 1] = glm::u8vec3(1, 0, 0);
-					normal[i + 2] = glm::u8vec3(1, 0, 0);
-					normal[i + 3] = glm::u8vec3(1, 0, 0);
-					normal[i + 4] = glm::u8vec3(1, 0, 0);
-					normal[i + 5] = glm::u8vec3(1, 0, 0);
+					normal[i + 0] = glm::i8vec3(1, 0, 0);
+					normal[i + 1] = glm::i8vec3(1, 0, 0);
+					normal[i + 2] = glm::i8vec3(1, 0, 0);
+					normal[i + 3] = glm::i8vec3(1, 0, 0);
+					normal[i + 4] = glm::i8vec3(1, 0, 0);
+					normal[i + 5] = glm::i8vec3(1, 0, 0);
 
 					uv[i + 0] = TYPE_TO_UV(side, 0.0f, 0.0f);
 					uv[i + 1] = TYPE_TO_UV(side, 1.0f, 0.0f);
@@ -481,19 +481,19 @@ struct chunk {
 						top = bottom = 12;
 					}
 
-					vertex[i + 0] = glm::u8vec3(x, y, z);
-					vertex[i + 1] = glm::u8vec3(x + 1, y, z);
-					vertex[i + 2] = glm::u8vec3(x, y, z + 1);
-					vertex[i + 3] = glm::u8vec3(x + 1, y, z);
-					vertex[i + 4] = glm::u8vec3(x + 1, y, z + 1);
-					vertex[i + 5] = glm::u8vec3(x, y, z + 1);
+					vertex[i + 0] = glm::i8vec3(x, y, z);
+					vertex[i + 1] = glm::i8vec3(x + 1, y, z);
+					vertex[i + 2] = glm::i8vec3(x, y, z + 1);
+					vertex[i + 3] = glm::i8vec3(x + 1, y, z);
+					vertex[i + 4] = glm::i8vec3(x + 1, y, z + 1);
+					vertex[i + 5] = glm::i8vec3(x, y, z + 1);
 
-					normal[i + 0] = glm::u8vec3(0, -1, 0);
-					normal[i + 1] = glm::u8vec3(0, -1, 0);
-					normal[i + 2] = glm::u8vec3(0, -1, 0);
-					normal[i + 3] = glm::u8vec3(0, -1, 0);
-					normal[i + 4] = glm::u8vec3(0, -1, 0);
-					normal[i + 5] = glm::u8vec3(0, -1, 0);
+					normal[i + 0] = glm::i8vec3(0, -1, 0);
+					normal[i + 1] = glm::i8vec3(0, -1, 0);
+					normal[i + 2] = glm::i8vec3(0, -1, 0);
+					normal[i + 3] = glm::i8vec3(0, -1, 0);
+					normal[i + 4] = glm::i8vec3(0, -1, 0);
+					normal[i + 5] = glm::i8vec3(0, -1, 0);
 
 					uv[i + 0] = TYPE_TO_UV(bottom, 0.0f, 0.0f);
 					uv[i + 1] = TYPE_TO_UV(bottom, 1.0f, 0.0f);
@@ -526,19 +526,19 @@ struct chunk {
 						top = bottom = 12;
 					}
 
-					vertex[i + 0] = glm::u8vec3(x, y + 1, z);
-					vertex[i + 1] = glm::u8vec3(x, y + 1, z + 1);
-					vertex[i + 2] = glm::u8vec3(x + 1, y + 1, z);
-					vertex[i + 3] = glm::u8vec3(x + 1, y + 1, z);
-					vertex[i + 4] = glm::u8vec3(x, y + 1, z + 1);
-					vertex[i + 5] = glm::u8vec3(x + 1, y + 1, z + 1);
+					vertex[i + 0] = glm::i8vec3(x, y + 1, z);
+					vertex[i + 1] = glm::i8vec3(x, y + 1, z + 1);
+					vertex[i + 2] = glm::i8vec3(x + 1, y + 1, z);
+					vertex[i + 3] = glm::i8vec3(x + 1, y + 1, z);
+					vertex[i + 4] = glm::i8vec3(x, y + 1, z + 1);
+					vertex[i + 5] = glm::i8vec3(x + 1, y + 1, z + 1);
 
-					normal[i + 0] = glm::u8vec3(0, 1, 0);
-					normal[i + 1] = glm::u8vec3(0, 1, 0);
-					normal[i + 2] = glm::u8vec3(0, 1, 0);
-					normal[i + 3] = glm::u8vec3(0, 1, 0);
-					normal[i + 4] = glm::u8vec3(0, 1, 0);
-					normal[i + 5] = glm::u8vec3(0, 1, 0);
+					normal[i + 0] = glm::i8vec3(0, 1, 0);
+					normal[i + 1] = glm::i8vec3(0, 1, 0);
+					normal[i + 2] = glm::i8vec3(0, 1, 0);
+					normal[i + 3] = glm::i8vec3(0, 1, 0);
+					normal[i + 4] = glm::i8vec3(0, 1, 0);
+					normal[i + 5] = glm::i8vec3(0, 1, 0);
 
 					uv[i + 0] = TYPE_TO_UV(top, 0.0f, 0.0f);
 					uv[i + 1] = TYPE_TO_UV(top, 0.0f, 1.0f);
@@ -573,19 +573,19 @@ struct chunk {
 						top = bottom = 12;
 					}
 
-					vertex[i + 0] = glm::u8vec3(x, y, z);
-					vertex[i + 1] = glm::u8vec3(x, y + 1, z);
-					vertex[i + 2] = glm::u8vec3(x + 1, y, z);
-					vertex[i + 3] = glm::u8vec3(x, y + 1, z);
-					vertex[i + 4] = glm::u8vec3(x + 1, y + 1, z);
-					vertex[i + 5] = glm::u8vec3(x + 1, y, z);
+					vertex[i + 0] = glm::i8vec3(x, y, z);
+					vertex[i + 1] = glm::i8vec3(x, y + 1, z);
+					vertex[i + 2] = glm::i8vec3(x + 1, y, z);
+					vertex[i + 3] = glm::i8vec3(x, y + 1, z);
+					vertex[i + 4] = glm::i8vec3(x + 1, y + 1, z);
+					vertex[i + 5] = glm::i8vec3(x + 1, y, z);
 
-					normal[i + 0] = glm::u8vec3(0, 0, -1);
-					normal[i + 1] = glm::u8vec3(0, 0, -1);
-					normal[i + 2] = glm::u8vec3(0, 0, -1);
-					normal[i + 3] = glm::u8vec3(0, 0, -1);
-					normal[i + 4] = glm::u8vec3(0, 0, -1);
-					normal[i + 5] = glm::u8vec3(0, 0, -1);
+					normal[i + 0] = glm::i8vec3(0, 0, -1);
+					normal[i + 1] = glm::i8vec3(0, 0, -1);
+					normal[i + 2] = glm::i8vec3(0, 0, -1);
+					normal[i + 3] = glm::i8vec3(0, 0, -1);
+					normal[i + 4] = glm::i8vec3(0, 0, -1);
+					normal[i + 5] = glm::i8vec3(0, 0, -1);
 
 					uv[i + 0] = TYPE_TO_UV(side, 0.0f, 0.0f);
 					uv[i + 1] = TYPE_TO_UV(side, 0.0f, 1.0f);
@@ -620,19 +620,19 @@ struct chunk {
 						top = bottom = 12;
 					}
 
-					vertex[i + 0] = glm::u8vec3(x, y, z + 1);
-					vertex[i + 1] = glm::u8vec3(x + 1, y, z + 1);
-					vertex[i + 2] = glm::u8vec3(x, y + 1, z + 1);
-					vertex[i + 3] = glm::u8vec3(x, y + 1, z + 1);
-					vertex[i + 4] = glm::u8vec3(x + 1, y, z + 1);
-					vertex[i + 5] = glm::u8vec3(x + 1, y + 1, z + 1);
+					vertex[i + 0] = glm::i8vec3(x, y, z + 1);
+					vertex[i + 1] = glm::i8vec3(x + 1, y, z + 1);
+					vertex[i + 2] = glm::i8vec3(x, y + 1, z + 1);
+					vertex[i + 3] = glm::i8vec3(x, y + 1, z + 1);
+					vertex[i + 4] = glm::i8vec3(x + 1, y, z + 1);
+					vertex[i + 5] = glm::i8vec3(x + 1, y + 1, z + 1);
 
-					normal[i + 0] = glm::u8vec3(0, 0, 1);
-					normal[i + 1] = glm::u8vec3(0, 0, 1);
-					normal[i + 2] = glm::u8vec3(0, 0, 1);
-					normal[i + 3] = glm::u8vec3(0, 0, 1);
-					normal[i + 4] = glm::u8vec3(0, 0, 1);
-					normal[i + 5] = glm::u8vec3(0, 0, 1);
+					normal[i + 0] = glm::i8vec3(0, 0, 1);
+					normal[i + 1] = glm::i8vec3(0, 0, 1);
+					normal[i + 2] = glm::i8vec3(0, 0, 1);
+					normal[i + 3] = glm::i8vec3(0, 0, 1);
+					normal[i + 4] = glm::i8vec3(0, 0, 1);
+					normal[i + 5] = glm::i8vec3(0, 0, 1);
 
 					uv[i + 0] = TYPE_TO_UV(side, 0.0f, 0.0f);
 					uv[i + 1] = TYPE_TO_UV(side, 1.0f, 0.0f);
@@ -654,21 +654,21 @@ struct chunk {
 
 
 			glBindBuffer(GL_ARRAY_BUFFER, this->_vbo[0]);
-			glBufferData(GL_ARRAY_BUFFER, i * sizeof(vertex[0]), vertex, GL_DYNAMIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, i * sizeof(vertex[0]), vertex, GL_STATIC_DRAW);
 
 			glEnableVertexAttribArray(cube_attribute_coord);
 			glVertexAttribPointer(cube_attribute_coord, 3, GL_BYTE, GL_FALSE, 0, 0);
 
 
 			glBindBuffer(GL_ARRAY_BUFFER, this->_vbo[1]);
-			glBufferData(GL_ARRAY_BUFFER, i * sizeof(normal[0]), normal, GL_DYNAMIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, i * sizeof(normal[0]), normal, GL_STATIC_DRAW);
 
 			glEnableVertexAttribArray(cube_attribute_normal);
 			glVertexAttribPointer(cube_attribute_normal, 3, GL_BYTE, GL_FALSE, 0, 0);
 
 
 			glBindBuffer(GL_ARRAY_BUFFER, this->_vbo[2]);
-			glBufferData(GL_ARRAY_BUFFER, i * sizeof(uv[0]), uv, GL_DYNAMIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, i * sizeof(uv[0]), uv, GL_STATIC_DRAW);
 
 			glEnableVertexAttribArray(cube_attribute_uv);
 			glVertexAttribPointer(cube_attribute_uv, 3, GL_BYTE, GL_FALSE, 0, 0);
